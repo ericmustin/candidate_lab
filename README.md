@@ -1,18 +1,18 @@
 # Cribl SE Lab Walkthrough
 
-This repository contains the Cribl SE lab, which allows you hands on experience with Cribl Stream and Edge tools.
+This repository contains a walkthrough of the Cribl SE lab, which allows you hands on experience with Cribl Stream, Edge, and Search tools.
 
-Each section of the lab allows you to exercise a different functionality within the Cribl Stream and Edge products, using a containerized homelab setup that mimic's a real world productions environment of a typical web facing ecommerce application.
+Each section of the lab allows you to exercise a different functionality within the Cribl Stream, Edge, and Search products, using a containerized homelab setup that mimics a typical real world production environment for an ecommerce application.
 
-For each Lab Module, a summary and screenshots of what's accomplished are provided to show how a successful configuration might appear.
+For each Lab Exercise section, a step by step walkthrough plus screenshots are provided to show how a successful configuration might appear.
 
-The specific instr
+This document is not meant to be a complete detailed setup but rather a high level walkthrough of key points. Please refer to the SE Candiate Lab PDF for complete instructions.
 
 ## Exercise One - Environment Setup
 
 In this Exercise, we setup the basic repository structure, which is merely a docker-compose.yml file and a .env file which contains the various environment variables used to provision the containers in the network. The containers included a mock web-app, it's sql compatible db, a cribl worker + edge container, and a minio container, which allows us to mimic cloud object storage like s3. It also provisions a docker network (`criblcandidatenetwork`) for easier connections btwn the various other containers. The created  [.env](.env) and [docker-compose](docker-compose.yaml) files can be found in this repository. (_please note that the .env file contains sensitive information so please do not commit it into version control_)
 
-Once the docker containers are started (`docker compose up` to start, and `docker-compose down` to remove), it's straightforward to visit the exposed port for the minio object storage container, login, and create a default bucket. Screenshots of this can be seen below
+Once the docker containers are started (`docker compose up` to start, and `docker-compose down` to remove), it's straightforward to visit the exposed host/port for the minio object storage container, login, and create a default bucket. Screenshots of this can be seen below
 
 ![minio](./artifacts/lab_one/miniocontainer.png)
 ![miniologin](./artifacts/lab_one/miniologin.png)
@@ -20,11 +20,11 @@ Once the docker containers are started (`docker compose up` to start, and `docke
 
 ## Exercise Two - Cribl Edge - Initial setup and configuration
 
-Next, we setup the initial configuration for the Edge container. First, ensure you've created a cribl cloud acct per the Lab instructions, and then generate a custom curl command for installing the edge node onto the local edge container. Following the lab instructions should yield a bash script to be copied (and then run in the container directly by `exec`'ing into it and cd'ing to the `/opt` directory), as seen in this screenshot
+Next, we setup the initial configuration for the Edge container. First, ensure you've created a cribl cloud acct per the Lab PDF instructions, and then generate a custom curl command for installing the edge node onto the local edge container. Following the lab instructions should yield a bash script to be copied (and then run in the container directly by `exec`'ing into it and cd'ing to the `/opt` directory), as seen in this screenshot
 
 ![bashcmd](./artifacts/lab_two/cribledgebash.png)
 
-Then, once edge is installed on the container, back in the cribl UI we configure edge, via it's sources, pipelines, and destinations. In this exercise we're focusing on just the Sources. So, first we removed unused sources (such as windows events, system metrics, etc), and then we add a syslog source per the instructions in the lab. Since we don't have a destination or pipeline setup yet, we simply use the quickconnect UI to connect to the devnull destination. Screenshots of this configuration can be seen below. Lastly we ensure we have a remote connection established btwn the cribl UI and our local edge instance, by invoking the "capture" option for the syslog datasource in question. This source will pickup application logs from our ecomm web-app, and allow us to create a sample file of these logs which we can then leverage to test and configure our pipeline transformations and filtering functions.
+Then, once edge is installed on the container, back in the cribl UI we configure edge, via it's sources, pipelines, and destinations. In this specific exercise we're focusing on just the Sources. So, first we removed unused sources (_such as windows events, system metrics, etc_), and then we add a syslog source per the instructions in the lab. Since we don't have a destination or pipeline setup yet, we simply use the quickconnect UI to connect to the devnull destination. Screenshots of this configuration can be seen below. Lastly we ensure we have a remote connection established btwn the cribl UI and our local edge instance, by invoking the "capture" option for the syslog datasource in question. This source will pickup application logs from our ecomm web-app, and allow us to create a sample file of these events which we can then leverage to test and configure our pipeline transformations and filtering functions.
 
 ![disable](./artifacts/lab_two/defaultdisablewindowsetal.png.png)
 ![syslog](./artifacts/lab_two/syslogcapture.png)
@@ -35,9 +35,9 @@ _Note: ensure you're not managing this configuration via the specific GUID's [Te
 
 ## Exercise Three - Event Parsing and Enrichment
 
-Now, which a Source and connection btwn an Edge Node and Leader established, we can setup the Middle step, a "Pipeline" which allows us to parse the received events from the source, enrich them, filter them, and transform them into desired formats. First, we create a custom lookup table as a csv file, used for translating http status codes into their description and type (ie, 404 => Not Found, Error), using the ["Lookup"](https://docs.cribl.io/stream/using-lookups/) feature.
+Now, with a Source and connection btwn an Edge Node and Leader established, we can setup the Middle step, a "Pipeline" which allows us to parse the received events from the source, enrich them, filter them, and transform them into desired formats. First, we create a custom lookup table as a csv file, used for translating http status codes into their description and type (ie, `404 => Not Found, Error`), using the ["Lookup"](https://docs.cribl.io/stream/using-lookups/) feature.
 
-Then, which a Lookup file defined, we can create our Pipeline. Our pipeline (OpenCart) will be able to leverage that sample capture file we generated in the previous step to verify it's working as expected. To our pipeline we add three functions, a [Regex Extract](https://docs.cribl.io/stream/regex-extract-function/)(execute regex on events raw text to extract specific actionable http request/response details as named capture groups), a [Lookup](https://docs.cribl.io/stream/lookup-function/)(map event values to what's in the lookup table), and an [Eval](https://docs.cribl.io/stream/eval-function/)(effectively custom js expressions). The Three functions we add to the pipeline should look like the below screenshots
+Then, with a Lookup csv file defined, we can create our Pipeline. Our pipeline (OpenCart) will be able to leverage that sample capture file we generated in the previous step to verify it's working as expected. To our pipeline we add three functions, a [Regex Extract](https://docs.cribl.io/stream/regex-extract-function/)(_execute regex on events raw text to extract specific actionable http request/response details as named capture groups_), a [Lookup](https://docs.cribl.io/stream/lookup-function/)(_map event values to what's in the lookup table_), and an [Eval](https://docs.cribl.io/stream/eval-function/)(_effectively custom js expressions_). The three functions we add to the pipeline should look like the below screenshots
 
 ![pipelineregex](./artifacts/lab_three/pipelineregex.png)
 ![lookup](./artifacts/lab_three/lookup.png)
@@ -47,7 +47,7 @@ Now we have specific fields for most relevant http request details, such as http
 
 ## Exercise Four - Event Transformation & Optimization
 
-While being able to modify events with powerful filters and transforms is useful, we also will need to serialize these events into specific wire compatible formats that can be sent to our destinations via their natively accepted standards. In this case, we'll add a [Serialize](https://docs.cribl.io/stream/serialize-function/#serialize) function to the end of our pipeline, allowing us to serialize these events into json which we can them emit to various destinations. In this function, we configure both the fields we do and do not want to include in our final payload, and the final result should look like the screenshot below
+While being able to modify events with powerful filters and transforms is useful, we also will need to serialize these events into specific wire compatible formats that can be sent to our destinations via their natively accepted standards. In this case, we'll add a [Serialize](https://docs.cribl.io/stream/serialize-function/#serialize) function to the end of our pipeline, allowing us to serialize these events into json which we can them emit to various destinations. In this function, we configure both the fields we do and do _not_ want to include in our final payload, and the final result should look like the screenshot below
 
 ![serialize](./artifacts/lab_four/pipelineserialize.png)
 
